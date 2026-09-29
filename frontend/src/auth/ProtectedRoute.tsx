@@ -1,0 +1,2 @@
+import type { ReactNode } from 'react'; import { Navigate } from 'react-router-dom'; import { useAuth } from './AuthProvider'
+export function ProtectedRoute({children}:{children:ReactNode}){ const {user,isInitializing}=useAuth(); if(isInitializing) return <div className="grid min-h-screen place-items-center text-sm text-slate-500">Checking session…</div>; return user?children:<Navigate to="/login" replace/> }

@@ -1,0 +1,2 @@
+import type { ReactNode } from 'react'; export function Card({children,className=''}:{children:ReactNode;className?:string}){return <section className={`rounded-2xl border border-slate-200 bg-white shadow-sm ${className}`}>{children}</section>}
+export function CardHeader({title,subtitle}:{title:string;subtitle?:string}){return <div className="border-b border-slate-100 px-5 py-4"><h2 className="text-sm font-semibold text-slate-900">{title}</h2>{subtitle&&<p className="mt-1 text-xs text-slate-500">{subtitle}</p>}</div>}
