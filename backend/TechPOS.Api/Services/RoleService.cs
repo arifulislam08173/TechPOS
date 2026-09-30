@@ -2,6 +2,7 @@ using Microsoft.EntityFrameworkCore;
 using TechPOS.Api.Data;
 using TechPOS.Api.DTOs.Roles;
 using TechPOS.Api.Interfaces;
+using TechPOS.Api.Helpers;
 using TechPOS.Api.Models;
 
 namespace TechPOS.Api.Services;
@@ -17,6 +18,43 @@ public class RoleService : IRoleService
         var counts = await _dbContext.Users.AsNoTracking().GroupBy(x => x.Role).Select(g => new { Role = g.Key, Count = g.Count() }).ToDictionaryAsync(x => x.Role, x => x.Count, cancellationToken);
         var permissions = await _dbContext.RolePermissions.AsNoTracking().Include(x => x.Permission).ToListAsync(cancellationToken);
         return roles.Select(role => Map(role, counts.GetValueOrDefault(role.Name), permissions.Where(x => x.RoleId == role.Id).Select(x => x.Permission.Code))).ToList();
+    }
+
+    public async Task<PagedResult<RoleLookupDto>> GetLookupAsync(
+        RoleLookupQueryDto request,
+        CancellationToken cancellationToken = default)
+    {
+        var query = _dbContext.Roles
+            .AsNoTracking()
+            .Where(x => x.IsActive)
+            .AsQueryable();
+
+        if (!string.IsNullOrWhiteSpace(request.Search))
+        {
+            var search = request.Search.Trim();
+            query = query.Where(x => EF.Functions.ILike(x.Name, $"%{search}%"));
+        }
+
+        query = query.OrderBy(x => x.Name);
+        var totalItems = await query.CountAsync(cancellationToken);
+        var items = await query
+            .Skip((request.Page - 1) * request.PageSize)
+            .Take(request.PageSize)
+            .Select(x => new RoleLookupDto
+            {
+                Id = x.Id,
+                Name = x.Name
+            })
+            .ToListAsync(cancellationToken);
+
+        return new PagedResult<RoleLookupDto>
+        {
+            Items = items,
+            Page = request.Page,
+            PageSize = request.PageSize,
+            TotalItems = totalItems,
+            TotalPages = (int)Math.Ceiling(totalItems / (double)request.PageSize)
+        };
     }
 
     public async Task<RoleResponseDto?> GetByIdAsync(int id, CancellationToken cancellationToken = default)

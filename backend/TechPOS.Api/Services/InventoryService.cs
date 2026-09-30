@@ -219,6 +219,8 @@ public class InventoryService : IInventoryService
                 Quantity = x.Quantity,
                 StockBefore = x.StockBefore,
                 StockAfter = x.StockAfter,
+                ReferenceType = x.ReferenceType,
+                ReferenceId = x.ReferenceId,
                 Note = x.Note,
                 CreatedAt = x.CreatedAt
             })
@@ -233,6 +235,31 @@ public class InventoryService : IInventoryService
             TotalPages = (int)Math.Ceiling(
                 totalItems / (double)request.PageSize)
         };
+    }
+
+    public async Task<StockTransactionResponseDto?> GetByIdAsync(
+        int id,
+        CancellationToken cancellationToken = default)
+    {
+        return await _dbContext.StockTransactions
+            .AsNoTracking()
+            .Where(x => x.Id == id)
+            .Select(x => new StockTransactionResponseDto
+            {
+                Id = x.Id,
+                ProductId = x.ProductId,
+                ProductName = x.Product.Name,
+                Sku = x.Product.Sku,
+                Type = x.Type.ToString(),
+                Quantity = x.Quantity,
+                StockBefore = x.StockBefore,
+                StockAfter = x.StockAfter,
+                ReferenceType = x.ReferenceType,
+                ReferenceId = x.ReferenceId,
+                Note = x.Note,
+                CreatedAt = x.CreatedAt
+            })
+            .FirstOrDefaultAsync(cancellationToken);
     }
 
     private async Task<Product?> GetProductForUpdateAsync(
@@ -264,6 +291,8 @@ public class InventoryService : IInventoryService
             Quantity = transaction.Quantity,
             StockBefore = transaction.StockBefore,
             StockAfter = transaction.StockAfter,
+            ReferenceType = transaction.ReferenceType,
+            ReferenceId = transaction.ReferenceId,
             Note = transaction.Note,
             CreatedAt = transaction.CreatedAt
         };

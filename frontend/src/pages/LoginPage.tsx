@@ -71,7 +71,7 @@ export function LoginPage() {
         </form>
 
         <p className="mt-6 border-t border-slate-100 pt-5 text-center text-xs text-slate-400">
-          JWT-protected API · Permission-based access control
+          TechPOS — Smarter retail, sales, and inventory management.
         </p>
       </div>
     </div>

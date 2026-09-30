@@ -14,6 +14,8 @@ public class AppDbContext : DbContext
     public DbSet<Category> Categories => Set<Category>();
     public DbSet<Product> Products => Set<Product>();
     public DbSet<StockTransaction> StockTransactions => Set<StockTransaction>();
+    public DbSet<Sale> Sales => Set<Sale>();
+    public DbSet<SaleItem> SaleItems => Set<SaleItem>();
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
@@ -59,5 +61,40 @@ public class AppDbContext : DbContext
         modelBuilder.Entity<StockTransaction>().Property(s => s.Type).HasConversion<string>();
         modelBuilder.Entity<StockTransaction>().HasIndex(s => s.ProductId);
         modelBuilder.Entity<StockTransaction>().HasIndex(s => s.CreatedAt);
+        modelBuilder.Entity<StockTransaction>().HasIndex(s => new { s.ReferenceType, s.ReferenceId });
+
+        modelBuilder.Entity<Sale>().HasIndex(s => s.InvoiceNumber).IsUnique();
+        modelBuilder.Entity<Sale>().HasIndex(s => s.CreatedAt);
+        modelBuilder.Entity<Sale>().HasIndex(s => s.CashierId);
+        modelBuilder.Entity<Sale>().Property(s => s.InvoiceNumber).HasMaxLength(50);
+        modelBuilder.Entity<Sale>().Property(s => s.Subtotal).HasPrecision(18, 2);
+        modelBuilder.Entity<Sale>().Property(s => s.DiscountAmount).HasPrecision(18, 2);
+        modelBuilder.Entity<Sale>().Property(s => s.GrandTotal).HasPrecision(18, 2);
+        modelBuilder.Entity<Sale>().Property(s => s.AmountPaid).HasPrecision(18, 2);
+        modelBuilder.Entity<Sale>().Property(s => s.ChangeAmount).HasPrecision(18, 2);
+        modelBuilder.Entity<Sale>().Property(s => s.PaymentMethod).HasConversion<string>().HasMaxLength(30);
+        modelBuilder.Entity<Sale>()
+            .HasOne(s => s.Cashier)
+            .WithMany()
+            .HasForeignKey(s => s.CashierId)
+            .OnDelete(DeleteBehavior.Restrict);
+
+        modelBuilder.Entity<SaleItem>().HasIndex(i => i.SaleId);
+        modelBuilder.Entity<SaleItem>().HasIndex(i => i.ProductId);
+        modelBuilder.Entity<SaleItem>().Property(i => i.ProductName).HasMaxLength(150);
+        modelBuilder.Entity<SaleItem>().Property(i => i.Sku).HasMaxLength(50);
+        modelBuilder.Entity<SaleItem>().Property(i => i.UnitCost).HasPrecision(18, 2);
+        modelBuilder.Entity<SaleItem>().Property(i => i.UnitPrice).HasPrecision(18, 2);
+        modelBuilder.Entity<SaleItem>().Property(i => i.LineTotal).HasPrecision(18, 2);
+        modelBuilder.Entity<SaleItem>()
+            .HasOne(i => i.Sale)
+            .WithMany(s => s.Items)
+            .HasForeignKey(i => i.SaleId)
+            .OnDelete(DeleteBehavior.Cascade);
+        modelBuilder.Entity<SaleItem>()
+            .HasOne(i => i.Product)
+            .WithMany()
+            .HasForeignKey(i => i.ProductId)
+            .OnDelete(DeleteBehavior.Restrict);
     }
 }

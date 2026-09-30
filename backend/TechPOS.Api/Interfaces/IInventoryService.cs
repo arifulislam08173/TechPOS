@@ -20,4 +20,8 @@ public interface IInventoryService
     Task<PagedResult<StockTransactionResponseDto>> GetHistoryAsync(
         InventoryQueryDto query,
         CancellationToken cancellationToken = default);
+
+    Task<StockTransactionResponseDto?> GetByIdAsync(
+        int id,
+        CancellationToken cancellationToken = default);
 }

@@ -17,8 +17,7 @@ public static class PermissionCodes
     public const string SalesManage = "sales.manage";
     public const string ReportsView = "reports.view";
 
-    public static readonly IReadOnlyList<PermissionDefinition> All =
-        new PermissionDefinition[]
+    public static readonly IReadOnlyList<PermissionDefinition> All = new PermissionDefinition[]
     {
         new(DashboardView, "View dashboard", "Dashboard", "View operational dashboard widgets."),
         new(ProductsView, "View products", "Products", "View product catalog and product details."),
@@ -31,8 +30,8 @@ public static class PermissionCodes
         new(UsersManage, "Manage users", "Administration", "Create, edit, deactivate and reset passwords for users."),
         new(RolesView, "View roles", "Administration", "View roles and permission assignments."),
         new(RolesManage, "Manage roles", "Administration", "Create and update roles and their permissions."),
-        new(SalesView, "View sales", "Sales", "View sales and invoices when the POS module is enabled."),
-        new(SalesManage, "Manage sales", "Sales", "Create and manage POS sales when the POS module is enabled."),
+        new(SalesView, "View sales", "Sales", "View sales history and invoice details."),
+        new(SalesManage, "Manage sales", "Sales", "Create POS sales and complete checkout transactions."),
         new(ReportsView, "View reports", "Reports", "View business and inventory reports.")
     };
 }

@@ -18,6 +18,16 @@ public class InventoryController : ControllerBase
     [HttpGet("history")]
     public async Task<ActionResult> GetHistory([FromQuery] InventoryQueryDto query, CancellationToken cancellationToken) => Ok(await _inventoryService.GetHistoryAsync(query, cancellationToken));
 
+    [Authorize(Policy = PermissionCodes.InventoryView)]
+    [HttpGet("{id:int}")]
+    public async Task<ActionResult> GetById(int id, CancellationToken cancellationToken)
+    {
+        var transaction = await _inventoryService.GetByIdAsync(id, cancellationToken);
+        return transaction is null
+            ? NotFound(new { message = "Stock transaction not found." })
+            : Ok(transaction);
+    }
+
     [Authorize(Policy = PermissionCodes.InventoryManage)]
     [HttpPost("stock-in")]
     public async Task<ActionResult> StockIn(StockInDto dto, CancellationToken cancellationToken) => await Execute(() => _inventoryService.StockInAsync(dto, cancellationToken));

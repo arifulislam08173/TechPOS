@@ -18,6 +18,12 @@ public class RolesController : ControllerBase
     [HttpGet]
     public async Task<ActionResult> GetAll(CancellationToken cancellationToken) => Ok(await _roleService.GetAllAsync(cancellationToken));
 
+    [HttpGet("lookup")]
+    public async Task<ActionResult> Lookup(
+        [FromQuery] RoleLookupQueryDto query,
+        CancellationToken cancellationToken) =>
+        Ok(await _roleService.GetLookupAsync(query, cancellationToken));
+
     [Authorize(Policy = PermissionCodes.RolesView)]
     [HttpGet("permissions")]
     public async Task<ActionResult> GetPermissions(CancellationToken cancellationToken) => Ok(await _roleService.GetPermissionsAsync(cancellationToken));

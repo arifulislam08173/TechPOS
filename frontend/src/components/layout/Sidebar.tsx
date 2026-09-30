@@ -4,6 +4,9 @@ import {
   Gauge,
   LogOut,
   PackageOpen,
+  ShoppingCart,
+  ReceiptText,
+  BarChart3,
   ShieldCheck,
   UserCircle,
   Users,
@@ -21,6 +24,9 @@ const workspace: NavItem[] = [
   { to: '/products', label: 'Products', icon: Boxes, permission: Permissions.productsView },
   { to: '/categories', label: 'Categories', icon: FolderTree, permission: Permissions.categoriesView },
   { to: '/inventory', label: 'Inventory', icon: Warehouse, permission: Permissions.inventoryView },
+  { to: '/pos', label: 'Point of sale', icon: ShoppingCart, permission: Permissions.salesManage },
+  { to: '/sales', label: 'Sales', icon: ReceiptText, permission: Permissions.salesView },
+  { to: '/reports', label: 'Reports', icon: BarChart3, permission: Permissions.reportsView },
 ]
 
 const administration: NavItem[] = [

@@ -13,6 +13,7 @@ import { PageHeader } from '../../components/ui/PageHeader'
 import { Card, CardHeader } from '../../components/ui/Card'
 import { Button } from '../../components/ui/Button'
 import { FormField, inputClass } from '../../components/ui/FormField'
+import { RemoteSearchSelect } from '../../components/ui/RemoteSearchSelect'
 import type { ProductInput } from '../../types/product'
 
 type Form = ProductInput & { isActive: boolean }
@@ -23,16 +24,33 @@ export function ProductFormPage() {
   const productId = id ? Number(id) : null
   const navigate = useNavigate()
   const queryClient = useQueryClient()
-  const categories = useQuery({ queryKey: ['category-lookup'], queryFn: categoriesApi.lookup })
-  const existing = useQuery({ queryKey: ['product', productId], queryFn: () => productsApi.get(productId!), enabled: !!productId })
-  const { register, handleSubmit, reset, formState: { errors } } = useForm<Form>({ defaultValues: { lowStockThreshold: 5, isActive: true } })
+
+  const existing = useQuery({
+    queryKey: ['product', productId],
+    queryFn: () => productsApi.get(productId!),
+    enabled: !!productId,
+  })
+
+  const {
+    register,
+    handleSubmit,
+    reset,
+    setValue,
+    watch,
+    formState: { errors },
+  } = useForm<Form>({
+    defaultValues: { lowStockThreshold: 5, isActive: true },
+  })
+
+  const categoryId = watch('categoryId')
 
   useEffect(() => {
     if (existing.data) reset({ ...existing.data, brand: existing.data.brand ?? '' })
   }, [existing.data, reset])
 
   const save = useMutation({
-    mutationFn: (data: Form) => productId ? productsApi.update(productId, data) : productsApi.create(data),
+    mutationFn: (data: Form) =>
+      productId ? productsApi.update(productId, data) : productsApi.create(data),
     onSuccess: () => {
       toast.success(productId ? 'Product updated' : 'Product created')
       queryClient.invalidateQueries({ queryKey: ['products'] })
@@ -41,41 +59,116 @@ export function ProductFormPage() {
     onError: (error) => toast.error(getApiError(error)),
   })
 
-  if (!hasPermission(Permissions.productsManage)) return <Navigate to="/products" replace />
+  if (!hasPermission(Permissions.productsManage)) {
+    return <Navigate to="/products" replace />
+  }
 
-  const submit = handleSubmit((data) => save.mutate({
-    ...data,
-    purchasePrice: Number(data.purchasePrice),
-    sellingPrice: Number(data.sellingPrice),
-    lowStockThreshold: Number(data.lowStockThreshold),
-    categoryId: Number(data.categoryId),
-  }))
+  const submit = handleSubmit((data) =>
+    save.mutate({
+      ...data,
+      purchasePrice: Number(data.purchasePrice),
+      sellingPrice: Number(data.sellingPrice),
+      lowStockThreshold: Number(data.lowStockThreshold),
+      categoryId: Number(data.categoryId),
+    }),
+  )
 
   return (
     <>
       <PageHeader
         title={productId ? 'Edit product' : 'New product'}
         subtitle="Maintain catalog data while keeping stock changes inside the audited inventory workflow."
-        actions={<><Link to="/products"><Button variant="secondary">Discard</Button></Link><Button onClick={submit} disabled={save.isPending}><Save size={16} />{save.isPending ? 'Saving…' : 'Save product'}</Button></>}
+        actions={
+          <>
+            <Link to="/products"><Button variant="secondary">Discard</Button></Link>
+            <Button onClick={submit} disabled={save.isPending}>
+              <Save size={16} />{save.isPending ? 'Saving…' : 'Save product'}
+            </Button>
+          </>
+        }
       />
+
       <form onSubmit={submit} className="grid gap-6 xl:grid-cols-12">
         <Card className="xl:col-span-8">
           <CardHeader title="Product information" subtitle="Core catalog and pricing details" />
           <div className="grid gap-5 p-5 md:grid-cols-2">
-            <FormField label="Product name" error={errors.name ? 'Product name is required.' : undefined}><input className={inputClass} {...register('name', { required: true, minLength: 2 })} /></FormField>
-            <FormField label="SKU" error={errors.sku ? 'SKU is required.' : undefined}><input className={inputClass} {...register('sku', { required: true })} /></FormField>
-            <FormField label="Brand"><input className={inputClass} {...register('brand')} /></FormField>
-            <FormField label="Category" error={errors.categoryId ? 'Category is required.' : undefined}><select className={inputClass} {...register('categoryId', { required: true, valueAsNumber: true })}><option value="">Select category</option>{categories.data?.map((category) => <option key={category.id} value={category.id}>{category.name}</option>)}</select></FormField>
-            <FormField label="Purchase price"><input type="number" step="0.01" className={inputClass} {...register('purchasePrice', { required: true, valueAsNumber: true, min: 0 })} /></FormField>
-            <FormField label="Selling price"><input type="number" step="0.01" className={inputClass} {...register('sellingPrice', { required: true, valueAsNumber: true, min: 0 })} /></FormField>
+            <FormField label="Product name" error={errors.name ? 'Product name is required.' : undefined}>
+              <input className={inputClass} {...register('name', { required: true, minLength: 2 })} />
+            </FormField>
+
+            <FormField label="SKU" error={errors.sku ? 'SKU is required.' : undefined}>
+              <input className={inputClass} {...register('sku', { required: true })} />
+            </FormField>
+
+            <FormField label="Brand">
+              <input className={inputClass} {...register('brand')} />
+            </FormField>
+
+            <FormField
+              label="Category"
+              hint="Search categories"
+              error={errors.categoryId ? 'Category is required.' : undefined}
+            >
+              <input type="hidden" {...register('categoryId', { required: true, valueAsNumber: true })} />
+              <RemoteSearchSelect
+                queryKey={['category-form-lookup']}
+                value={categoryId || undefined}
+                selectedLabel={existing.data?.categoryName}
+                onChange={(value) => setValue('categoryId', Number(value || 0), { shouldValidate: true, shouldDirty: true })}
+                loadPage={({ page, pageSize, search }) =>
+                  categoriesApi.list({ page, pageSize, search, isActive: true })
+                }
+                getOptionValue={(category) => category.id}
+                getOptionLabel={(category) => category.name}
+                placeholder="Select category"
+                searchPlaceholder="Search categories…"
+              />
+            </FormField>
+
+            <FormField label="Purchase price">
+              <input
+                type="number"
+                step="0.01"
+                className={inputClass}
+                {...register('purchasePrice', { required: true, valueAsNumber: true, min: 0 })}
+              />
+            </FormField>
+
+            <FormField label="Selling price">
+              <input
+                type="number"
+                step="0.01"
+                className={inputClass}
+                {...register('sellingPrice', { required: true, valueAsNumber: true, min: 0 })}
+              />
+            </FormField>
           </div>
         </Card>
+
         <Card className="h-fit xl:col-span-4">
           <CardHeader title="Record setup" subtitle="Availability and inventory controls" />
           <div className="space-y-5 p-5">
-            <FormField label="Low-stock threshold" hint="Products at or below this quantity are flagged as low stock."><input type="number" className={inputClass} {...register('lowStockThreshold', { valueAsNumber: true, min: 0 })} /></FormField>
-            {productId && <label className="flex items-center justify-between rounded-xl border border-slate-200 p-4"><span><span className="block text-sm font-medium text-slate-900">Active product</span><span className="text-xs text-slate-500">Available for retail operations</span></span><input type="checkbox" className="size-4" {...register('isActive')} /></label>}
-            <p className="rounded-xl bg-slate-50 p-3 text-xs leading-5 text-slate-500">Stock quantity is intentionally read-only here. Use Inventory → New stock operation so every quantity change has an audit trail.</p>
+            <FormField label="Low-stock threshold" hint="Products at or below this quantity are flagged as low stock.">
+              <input
+                type="number"
+                className={inputClass}
+                {...register('lowStockThreshold', { valueAsNumber: true, min: 0 })}
+              />
+            </FormField>
+
+            {productId && (
+              <label className="flex items-center justify-between rounded-xl border border-slate-200 p-4">
+                <span>
+                  <span className="block text-sm font-medium text-slate-900">Active product</span>
+                  <span className="text-xs text-slate-500">Available for retail operations</span>
+                </span>
+                <input type="checkbox" className="size-4" {...register('isActive')} />
+              </label>
+            )}
+
+            <p className="rounded-xl bg-slate-50 p-3 text-xs leading-5 text-slate-500">
+              Stock quantity is intentionally read-only here. Use Inventory → New stock operation so every quantity change has an audit trail.
+            </p>
           </div>
         </Card>
       </form>

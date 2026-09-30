@@ -16,3 +16,8 @@ export type Role = {
   permissionCodes: string[]
   createdAt: string
 }
+
+export type RoleLookup = {
+  id: number
+  name: string
+}
